@@ -1,41 +1,51 @@
 package com.est.ftiti;
-import org.junit.jupiter.api.BeforeAll;
+
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
+@ExtendWith(MockitoExtension.class)
 public class OrderServiceTest {
-    private PaymentService paymentService;
-    private OrderService orderService;
 
-    @BeforeEach
-    public void setUp() {
-        paymentService = Mockito.mock(PaymentService.class);
-        orderService = new OrderService(paymentService);
-    }
+    @Mock
+    private PaymentService paymentService; 
+
+    @InjectMocks
+    private OrderService orderService; 
 
     @Test
-    public void testPlaceOrder_PaymentSuccessful() {
-        Order order = new Order(100.0);
-     // Mock the behavior of the paymentService to return true when the processPayment method is called with the order's amount
-        when(paymentService.processPayment(order.getAmount())).thenReturn(true);
+    public void testSuccessfulPayment() {
+        
+        when(paymentService.processPayment(anyDouble()))
+            .thenReturn(true); 
 
-        // Call the placeOrder method of the orderService with the order object and store the result
+        Order order = new Order(100.0);
         boolean result = orderService.placeOrder(order);
 
-        // Assert that the result of placeOrder is true
-        assertTrue(result);
+        assertTrue(result, "Bestellung sollte erfolgreich abgeschlossen werden");
 
-        // Verify that the processPayment method of the paymentService was called exactly once with the order's amount
-        verify(paymentService, times(1)).processPayment(order.getAmount());
-
+        
+        verify(paymentService).processPayment(order.getAmount());
     }
 
     @Test
-    public void testPlaceOrder_PaymentFailed() {
-    	assertTrue(false);
+    public void testFailedPayment() {
+        
+        when(paymentService.processPayment(anyDouble()))
+            .thenThrow(new PaymentFailedException("Payment failed"));
+
+        Order order = new Order(100.0); 
+
+        boolean result = orderService.placeOrder(order);
+
+        assertFalse(result, "Bestellung sollte nicht abgeschlossen werden, wenn Zahlung fehlschlägt");
+
+        verify(paymentService).processPayment(order.getAmount());
     }
 }
